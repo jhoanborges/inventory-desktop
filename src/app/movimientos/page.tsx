@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { ColumnDef } from "@tanstack/react-table";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { fetchMovimientos, addMovimiento } from "@/store/movimientosSlice";
 import { Badge } from "@/components/ui/badge";
@@ -8,21 +9,19 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from "@/components/ui/table";
-import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Plus } from "lucide-react";
+import { DataTable } from "@/components/ui/data-table";
+import { Plus, ArrowUpDown } from "lucide-react";
 import { getProductos } from "@/services/api";
 import type { Producto, MovimientoInventario } from "@/types";
 
 export default function MovimientosPage() {
   const dispatch = useAppDispatch();
-  const { items, loading, total } = useAppSelector((s) => s.movimientos);
+  const { items, loading } = useAppSelector((s) => s.movimientos);
   const [open, setOpen] = useState(false);
   const [productos, setProductos] = useState<Producto[]>([]);
   const [form, setForm] = useState<Partial<MovimientoInventario>>({
@@ -33,15 +32,61 @@ export default function MovimientosPage() {
   });
 
   useEffect(() => {
-    dispatch(fetchMovimientos({}));
+    dispatch(fetchMovimientos({ per_page: 1000 }));
     getProductos({ per_page: 500 }).then((r) => setProductos(r.data.data));
   }, [dispatch]);
 
   const handleSave = async () => {
     await dispatch(addMovimiento(form));
     setOpen(false);
-    dispatch(fetchMovimientos({}));
+    dispatch(fetchMovimientos({ per_page: 1000 }));
   };
+
+  const columns: ColumnDef<MovimientoInventario>[] = [
+    {
+      id: "producto",
+      accessorFn: (row) => row.producto?.nombre ?? "-",
+      header: ({ column }) => (
+        <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
+          Producto <ArrowUpDown className="ml-1 h-3 w-3" />
+        </Button>
+      ),
+      cell: ({ row }) => <span className="font-medium">{row.getValue("producto")}</span>,
+    },
+    {
+      accessorKey: "tipo",
+      header: "Tipo",
+      cell: ({ row }) => (
+        <Badge variant={String(row.getValue("tipo")) === "entrada" ? "default" : "destructive"}>
+          {String(row.getValue("tipo")) === "entrada" ? "Entrada" : "Salida"}
+        </Badge>
+      ),
+    },
+    {
+      accessorKey: "cantidad",
+      header: () => <div className="text-right">Cantidad</div>,
+      cell: ({ row }) => <div className="text-right">{row.getValue("cantidad")}</div>,
+    },
+    {
+      accessorKey: "motivo",
+      header: "Motivo",
+      cell: ({ row }) => row.getValue("motivo") ?? "-",
+    },
+    {
+      id: "usuario",
+      accessorFn: (row) => row.user?.name ?? "-",
+      header: "Usuario",
+    },
+    {
+      accessorKey: "created_at",
+      header: ({ column }) => (
+        <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
+          Fecha <ArrowUpDown className="ml-1 h-3 w-3" />
+        </Button>
+      ),
+      cell: ({ row }) => new Date(row.getValue("created_at")).toLocaleString(),
+    },
+  ];
 
   return (
     <div className="space-y-6">
@@ -52,41 +97,14 @@ export default function MovimientosPage() {
         </Button>
       </div>
 
-      <div className="border rounded-md">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Producto</TableHead>
-              <TableHead>Tipo</TableHead>
-              <TableHead className="text-right">Cantidad</TableHead>
-              <TableHead>Motivo</TableHead>
-              <TableHead>Usuario</TableHead>
-              <TableHead>Fecha</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {loading ? (
-              <TableRow><TableCell colSpan={6} className="text-center py-8">Cargando...</TableCell></TableRow>
-            ) : items.length === 0 ? (
-              <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">No hay movimientos</TableCell></TableRow>
-            ) : items.map((m) => (
-              <TableRow key={m.id}>
-                <TableCell className="font-medium">{m.producto?.nombre ?? "-"}</TableCell>
-                <TableCell>
-                  <Badge variant={String(m.tipo) === "entrada" ? "default" : "destructive"}>
-                    {String(m.tipo) === "entrada" ? "Entrada" : "Salida"}
-                  </Badge>
-                </TableCell>
-                <TableCell className="text-right">{m.cantidad}</TableCell>
-                <TableCell>{m.motivo ?? "-"}</TableCell>
-                <TableCell>{m.user?.name ?? "-"}</TableCell>
-                <TableCell>{new Date(m.created_at).toLocaleString()}</TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
-      <p className="text-sm text-muted-foreground">Total: {total} movimientos</p>
+      <DataTable
+        columns={columns}
+        data={items}
+        loading={loading}
+        searchColumn=""
+        searchPlaceholder="Buscar..."
+        pageSize={20}
+      />
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>

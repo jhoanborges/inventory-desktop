@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import ExcelJS from "exceljs";
-import { saveAs } from "file-saver";
+import { save } from "@tauri-apps/plugin-dialog";
+import { writeFile } from "@tauri-apps/plugin-fs";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getProductos } from "@/services/api";
@@ -49,10 +50,13 @@ export default function ExcelExport() {
       });
 
       const buffer = await workbook.xlsx.writeBuffer();
-      const blob = new Blob([buffer], {
-        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      const filePath = await save({
+        defaultPath: `productos_${new Date().toISOString().split("T")[0]}.xlsx`,
+        filters: [{ name: "Excel", extensions: ["xlsx"] }],
       });
-      saveAs(blob, `productos_${new Date().toISOString().split("T")[0]}.xlsx`);
+      if (filePath) {
+        await writeFile(filePath, new Uint8Array(buffer));
+      }
     } catch {
       alert("Error al exportar productos");
     }

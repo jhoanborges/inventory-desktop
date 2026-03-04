@@ -11,10 +11,15 @@ interface AuthState {
 
 const initialState: AuthState = {
   user: null,
-  token: typeof window !== "undefined" ? localStorage.getItem("token") : null,
+  token: null,
   loading: false,
   error: null,
 };
+
+export const initializeAuth = createAsyncThunk("auth/init", async () => {
+  const token = localStorage.getItem("token");
+  return token;
+});
 
 export const loginThunk = createAsyncThunk(
   "auth/login",
@@ -57,6 +62,9 @@ const authSlice = createSlice({
       })
       .addCase(fetchUser.fulfilled, (state, action) => {
         state.user = action.payload;
+      })
+      .addCase(initializeAuth.fulfilled, (state, action) => {
+        state.token = action.payload;
       });
   },
 });

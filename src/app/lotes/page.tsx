@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { ColumnDef } from "@tanstack/react-table";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { fetchLotes, addLote, removeLote } from "@/store/lotesSlice";
 import { Badge } from "@/components/ui/badge";
@@ -8,21 +9,19 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from "@/components/ui/table";
-import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Plus, Trash2 } from "lucide-react";
+import { DataTable } from "@/components/ui/data-table";
+import { Plus, Trash2, ArrowUpDown } from "lucide-react";
 import { getProductos } from "@/services/api";
 import type { Producto, Lote } from "@/types";
 
 export default function LotesPage() {
   const dispatch = useAppDispatch();
-  const { items, loading, total } = useAppSelector((s) => s.lotes);
+  const { items, loading } = useAppSelector((s) => s.lotes);
   const [open, setOpen] = useState(false);
   const [productos, setProductos] = useState<Producto[]>([]);
   const [form, setForm] = useState<Partial<Lote>>({
@@ -33,14 +32,14 @@ export default function LotesPage() {
   });
 
   useEffect(() => {
-    dispatch(fetchLotes({}));
+    dispatch(fetchLotes({ per_page: 1000 }));
     getProductos({ per_page: 500 }).then((r) => setProductos(r.data.data));
   }, [dispatch]);
 
   const handleSave = async () => {
     await dispatch(addLote(form));
     setOpen(false);
-    dispatch(fetchLotes({}));
+    dispatch(fetchLotes({ per_page: 1000 }));
   };
 
   const estadoColor = (estado: string) => {
@@ -52,6 +51,58 @@ export default function LotesPage() {
     }
   };
 
+  const columns: ColumnDef<Lote>[] = [
+    {
+      accessorKey: "numero_lote",
+      header: ({ column }) => (
+        <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
+          N. Lote <ArrowUpDown className="ml-1 h-3 w-3" />
+        </Button>
+      ),
+      cell: ({ row }) => <span className="font-mono">{row.getValue("numero_lote")}</span>,
+    },
+    {
+      id: "producto",
+      accessorFn: (row) => row.producto?.nombre ?? "-",
+      header: "Producto",
+    },
+    {
+      accessorKey: "cantidad",
+      header: () => <div className="text-right">Cantidad</div>,
+      cell: ({ row }) => <div className="text-right">{row.getValue("cantidad")}</div>,
+    },
+    {
+      accessorKey: "fecha_fabricacion",
+      header: "Fabricación",
+      cell: ({ row }) => row.getValue("fecha_fabricacion") ?? "-",
+    },
+    {
+      accessorKey: "fecha_vencimiento",
+      header: "Vencimiento",
+      cell: ({ row }) => row.getValue("fecha_vencimiento") ?? "-",
+    },
+    {
+      accessorKey: "estado",
+      header: "Estado",
+      cell: ({ row }) => (
+        <Badge variant={estadoColor(String(row.getValue("estado")))}>
+          {String(row.getValue("estado"))}
+        </Badge>
+      ),
+    },
+    {
+      id: "actions",
+      header: () => <div className="text-right">Acciones</div>,
+      cell: ({ row }) => (
+        <div className="text-right">
+          <Button variant="ghost" size="icon" onClick={() => { if (confirm("¿Eliminar?")) dispatch(removeLote(row.original.id)); }}>
+            <Trash2 className="h-4 w-4 text-red-500" />
+          </Button>
+        </div>
+      ),
+    },
+  ];
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -61,45 +112,14 @@ export default function LotesPage() {
         </Button>
       </div>
 
-      <div className="border rounded-md">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>N. Lote</TableHead>
-              <TableHead>Producto</TableHead>
-              <TableHead className="text-right">Cantidad</TableHead>
-              <TableHead>Fabricación</TableHead>
-              <TableHead>Vencimiento</TableHead>
-              <TableHead>Estado</TableHead>
-              <TableHead className="text-right">Acciones</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {loading ? (
-              <TableRow><TableCell colSpan={7} className="text-center py-8">Cargando...</TableCell></TableRow>
-            ) : items.length === 0 ? (
-              <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">No hay lotes</TableCell></TableRow>
-            ) : items.map((l) => (
-              <TableRow key={l.id}>
-                <TableCell className="font-mono">{l.numero_lote}</TableCell>
-                <TableCell>{l.producto?.nombre ?? "-"}</TableCell>
-                <TableCell className="text-right">{l.cantidad}</TableCell>
-                <TableCell>{l.fecha_fabricacion ?? "-"}</TableCell>
-                <TableCell>{l.fecha_vencimiento ?? "-"}</TableCell>
-                <TableCell>
-                  <Badge variant={estadoColor(String(l.estado))}>{String(l.estado)}</Badge>
-                </TableCell>
-                <TableCell className="text-right">
-                  <Button variant="ghost" size="icon" onClick={() => { if (confirm("¿Eliminar?")) dispatch(removeLote(l.id)); }}>
-                    <Trash2 className="h-4 w-4 text-red-500" />
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
-      <p className="text-sm text-muted-foreground">Total: {total} lotes</p>
+      <DataTable
+        columns={columns}
+        data={items}
+        loading={loading}
+        searchColumn=""
+        searchPlaceholder="Buscar..."
+        pageSize={20}
+      />
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>

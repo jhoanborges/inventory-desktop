@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { ColumnDef } from "@tanstack/react-table";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { fetchRutas, addRuta, removeRuta } from "@/store/rutasSlice";
 import { Badge } from "@/components/ui/badge";
@@ -8,20 +9,18 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from "@/components/ui/table";
-import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Plus, Trash2 } from "lucide-react";
+import { DataTable } from "@/components/ui/data-table";
+import { Plus, Trash2, ArrowUpDown } from "lucide-react";
 import type { Ruta } from "@/types";
 
 export default function RutasPage() {
   const dispatch = useAppDispatch();
-  const { items, loading, total } = useAppSelector((s) => s.rutas);
+  const { items, loading } = useAppSelector((s) => s.rutas);
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<Partial<Ruta>>({
     nombre: "",
@@ -31,12 +30,12 @@ export default function RutasPage() {
     estado: "pendiente",
   });
 
-  useEffect(() => { dispatch(fetchRutas({})); }, [dispatch]);
+  useEffect(() => { dispatch(fetchRutas({ per_page: 1000 })); }, [dispatch]);
 
   const handleSave = async () => {
     await dispatch(addRuta(form));
     setOpen(false);
-    dispatch(fetchRutas({}));
+    dispatch(fetchRutas({ per_page: 1000 }));
   };
 
   const estadoColor = (estado: string) => {
@@ -57,6 +56,55 @@ export default function RutasPage() {
     }
   };
 
+  const columns: ColumnDef<Ruta>[] = [
+    {
+      accessorKey: "nombre",
+      header: ({ column }) => (
+        <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
+          Nombre <ArrowUpDown className="ml-1 h-3 w-3" />
+        </Button>
+      ),
+      cell: ({ row }) => <span className="font-medium">{row.getValue("nombre")}</span>,
+    },
+    { accessorKey: "origen", header: "Origen" },
+    { accessorKey: "destino", header: "Destino" },
+    {
+      id: "operador",
+      accessorFn: (row) => row.operador?.name ?? "-",
+      header: "Operador",
+    },
+    {
+      accessorKey: "vehiculo",
+      header: "Vehículo",
+      cell: ({ row }) => row.getValue("vehiculo") ?? "-",
+    },
+    {
+      accessorKey: "estado",
+      header: "Estado",
+      cell: ({ row }) => (
+        <Badge variant={estadoColor(String(row.getValue("estado")))}>
+          {estadoLabel(String(row.getValue("estado")))}
+        </Badge>
+      ),
+    },
+    {
+      accessorKey: "fecha_inicio",
+      header: "Inicio",
+      cell: ({ row }) => row.getValue("fecha_inicio") ?? "-",
+    },
+    {
+      id: "actions",
+      header: () => <div className="text-right">Acciones</div>,
+      cell: ({ row }) => (
+        <div className="text-right">
+          <Button variant="ghost" size="icon" onClick={() => { if (confirm("¿Eliminar?")) dispatch(removeRuta(row.original.id)); }}>
+            <Trash2 className="h-4 w-4 text-red-500" />
+          </Button>
+        </div>
+      ),
+    },
+  ];
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -66,47 +114,14 @@ export default function RutasPage() {
         </Button>
       </div>
 
-      <div className="border rounded-md">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Nombre</TableHead>
-              <TableHead>Origen</TableHead>
-              <TableHead>Destino</TableHead>
-              <TableHead>Operador</TableHead>
-              <TableHead>Vehículo</TableHead>
-              <TableHead>Estado</TableHead>
-              <TableHead>Inicio</TableHead>
-              <TableHead className="text-right">Acciones</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {loading ? (
-              <TableRow><TableCell colSpan={8} className="text-center py-8">Cargando...</TableCell></TableRow>
-            ) : items.length === 0 ? (
-              <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">No hay rutas</TableCell></TableRow>
-            ) : items.map((r) => (
-              <TableRow key={r.id}>
-                <TableCell className="font-medium">{r.nombre}</TableCell>
-                <TableCell>{r.origen}</TableCell>
-                <TableCell>{r.destino}</TableCell>
-                <TableCell>{r.operador?.name ?? "-"}</TableCell>
-                <TableCell>{r.vehiculo ?? "-"}</TableCell>
-                <TableCell>
-                  <Badge variant={estadoColor(String(r.estado))}>{estadoLabel(String(r.estado))}</Badge>
-                </TableCell>
-                <TableCell>{r.fecha_inicio ?? "-"}</TableCell>
-                <TableCell className="text-right">
-                  <Button variant="ghost" size="icon" onClick={() => { if (confirm("¿Eliminar?")) dispatch(removeRuta(r.id)); }}>
-                    <Trash2 className="h-4 w-4 text-red-500" />
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
-      <p className="text-sm text-muted-foreground">Total: {total} rutas</p>
+      <DataTable
+        columns={columns}
+        data={items}
+        loading={loading}
+        searchColumn=""
+        searchPlaceholder="Buscar..."
+        pageSize={20}
+      />
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>

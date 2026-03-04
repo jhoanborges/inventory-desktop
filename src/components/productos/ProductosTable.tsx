@@ -1,36 +1,22 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { ColumnDef } from "@tanstack/react-table";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { fetchProductos, addProducto, editProducto, removeProducto } from "@/store/productosSlice";
 import type { Producto } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Plus, Pencil, Trash2, Search } from "lucide-react";
+import { DataTable } from "@/components/ui/data-table";
+import { Plus, Pencil, Trash2, ArrowUpDown } from "lucide-react";
 
 const emptyForm: Partial<Producto> = {
   sku: "",
@@ -47,15 +33,14 @@ const emptyForm: Partial<Producto> = {
 
 export default function ProductosTable() {
   const dispatch = useAppDispatch();
-  const { items, loading, total } = useAppSelector((s) => s.productos);
-  const [search, setSearch] = useState("");
+  const { items, loading } = useAppSelector((s) => s.productos);
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Producto | null>(null);
   const [form, setForm] = useState(emptyForm);
 
   useEffect(() => {
-    dispatch(fetchProductos({ search }));
-  }, [dispatch, search]);
+    dispatch(fetchProductos({ per_page: 1000 }));
+  }, [dispatch]);
 
   const handleOpen = (producto?: Producto) => {
     if (producto) {
@@ -75,7 +60,7 @@ export default function ProductosTable() {
       await dispatch(addProducto(form));
     }
     setOpen(false);
-    dispatch(fetchProductos({ search }));
+    dispatch(fetchProductos({ per_page: 1000 }));
   };
 
   const handleDelete = async (id: number) => {
@@ -84,86 +69,97 @@ export default function ProductosTable() {
     }
   };
 
+  const columns: ColumnDef<Producto>[] = [
+    {
+      accessorKey: "sku",
+      header: ({ column }) => (
+        <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
+          SKU <ArrowUpDown className="ml-1 h-3 w-3" />
+        </Button>
+      ),
+      cell: ({ row }) => <span className="font-mono">{row.getValue("sku")}</span>,
+    },
+    {
+      accessorKey: "nombre",
+      header: ({ column }) => (
+        <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
+          Nombre <ArrowUpDown className="ml-1 h-3 w-3" />
+        </Button>
+      ),
+      cell: ({ row }) => <span className="font-medium">{row.getValue("nombre")}</span>,
+    },
+    {
+      accessorKey: "categoria",
+      header: "Categoría",
+      cell: ({ row }) => row.getValue("categoria") ?? "-",
+    },
+    {
+      accessorKey: "unidad_medida",
+      header: "Unidad",
+    },
+    {
+      accessorKey: "precio",
+      header: () => <div className="text-right">Precio</div>,
+      cell: ({ row }) => {
+        const precio = row.getValue("precio") as number | null;
+        return <div className="text-right">{precio ? `$${Number(precio).toFixed(2)}` : "-"}</div>;
+      },
+    },
+    {
+      accessorKey: "stock_actual",
+      header: () => <div className="text-right">Stock</div>,
+      cell: ({ row }) => {
+        const stock = row.original.stock_actual;
+        const minimo = row.original.stock_minimo;
+        return (
+          <div className={`text-right ${stock <= minimo ? "text-red-500 font-bold" : ""}`}>
+            {stock}
+          </div>
+        );
+      },
+    },
+    {
+      accessorKey: "activo",
+      header: "Estado",
+      cell: ({ row }) => (
+        <Badge variant={row.original.activo ? "default" : "secondary"}>
+          {row.original.activo ? "Activo" : "Inactivo"}
+        </Badge>
+      ),
+    },
+    {
+      id: "actions",
+      header: () => <div className="text-right">Acciones</div>,
+      cell: ({ row }) => (
+        <div className="text-right space-x-1">
+          <Button variant="ghost" size="icon" onClick={() => handleOpen(row.original)}>
+            <Pencil className="h-4 w-4" />
+          </Button>
+          <Button variant="ghost" size="icon" onClick={() => handleDelete(row.original.id)}>
+            <Trash2 className="h-4 w-4 text-red-500" />
+          </Button>
+        </div>
+      ),
+    },
+  ];
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <div className="relative w-72">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Buscar por SKU, nombre o código..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-9"
-          />
-        </div>
+        <div />
         <Button onClick={() => handleOpen()}>
           <Plus className="h-4 w-4 mr-1" /> Nuevo Producto
         </Button>
       </div>
 
-      <div className="border rounded-md">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>SKU</TableHead>
-              <TableHead>Nombre</TableHead>
-              <TableHead>Categoría</TableHead>
-              <TableHead>Unidad</TableHead>
-              <TableHead className="text-right">Precio</TableHead>
-              <TableHead className="text-right">Stock</TableHead>
-              <TableHead>Estado</TableHead>
-              <TableHead className="text-right">Acciones</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {loading ? (
-              <TableRow>
-                <TableCell colSpan={8} className="text-center py-8">
-                  Cargando...
-                </TableCell>
-              </TableRow>
-            ) : items.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
-                  No hay productos
-                </TableCell>
-              </TableRow>
-            ) : (
-              items.map((p) => (
-                <TableRow key={p.id}>
-                  <TableCell className="font-mono">{p.sku}</TableCell>
-                  <TableCell className="font-medium">{p.nombre}</TableCell>
-                  <TableCell>{p.categoria ?? "-"}</TableCell>
-                  <TableCell>{p.unidad_medida}</TableCell>
-                  <TableCell className="text-right">
-                    {p.precio ? `$${Number(p.precio).toFixed(2)}` : "-"}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <span className={p.stock_actual <= p.stock_minimo ? "text-red-500 font-bold" : ""}>
-                      {p.stock_actual}
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={p.activo ? "default" : "secondary"}>
-                      {p.activo ? "Activo" : "Inactivo"}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right space-x-1">
-                    <Button variant="ghost" size="icon" onClick={() => handleOpen(p)}>
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" onClick={() => handleDelete(p.id)}>
-                      <Trash2 className="h-4 w-4 text-red-500" />
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
-
-      <p className="text-sm text-muted-foreground">Total: {total} productos</p>
+      <DataTable
+        columns={columns}
+        data={items}
+        loading={loading}
+        searchColumn=""
+        searchPlaceholder="Buscar por SKU, nombre o código..."
+        pageSize={20}
+      />
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-lg">

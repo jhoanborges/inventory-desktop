@@ -10,7 +10,7 @@ import type {
 } from "@/types";
 
 const api = axios.create({
-  baseURL: "http://localhost/api",
+  baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost/api",
   headers: { "Content-Type": "application/json", Accept: "application/json" },
 });
 
@@ -25,7 +25,7 @@ api.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       localStorage.removeItem("token");
-      window.location.href = "/";
+      window.location.href = "/login";
     }
     return Promise.reject(error);
   }
@@ -57,6 +57,15 @@ export const deleteProducto = (id: number) =>
 
 export const syncProductos = (productos: Partial<Producto>[]) =>
   api.post("/productos/sync", { productos });
+
+export const importCsv = (file: File) => {
+  const formData = new FormData();
+  formData.append("archivo", file);
+  return api.post("/productos/import-csv", formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+    maxBodyLength: 10 * 1024 * 1024,
+  });
+};
 
 // Lotes
 export const getLotes = (params?: Record<string, string | number>) =>

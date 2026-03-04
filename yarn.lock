@@ -2677,10 +2677,36 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@tanstack/react-table@npm:^8.21.3":
+  version: 8.21.3
+  resolution: "@tanstack/react-table@npm:8.21.3"
+  dependencies:
+    "@tanstack/table-core": "npm:8.21.3"
+  peerDependencies:
+    react: ">=16.8"
+    react-dom: ">=16.8"
+  checksum: 10c0/85d1d0fcb690ecc011f68a5a61c96f82142e31a0270dcf9cbc699a6f36715b1653fe6ff1518302a6d08b7093351fc4cabefd055a7db3cd8ac01e068956b0f944
+  languageName: node
+  linkType: hard
+
+"@tanstack/table-core@npm:8.21.3":
+  version: 8.21.3
+  resolution: "@tanstack/table-core@npm:8.21.3"
+  checksum: 10c0/40e3560e6d55e07cc047024aa7f83bd47a9323d21920d4adabba8071fd2d21230c48460b26cedf392588f8265b9edc133abb1b0d6d0adf4dae0970032900a8c9
+  languageName: node
+  linkType: hard
+
 "@tauri-apps/api@npm:^2.0.1":
   version: 2.0.1
   resolution: "@tauri-apps/api@npm:2.0.1"
   checksum: 10c0/25ee39c7f2a0f6716c1a8124a63ea139fad631124ba21861c407325058d4902fdb69d96428fcc4235c1642fe38e5a3aad405dc8ef00ceb04bdacd4a6115c4b84
+  languageName: node
+  linkType: hard
+
+"@tauri-apps/api@npm:^2.8.0":
+  version: 2.10.1
+  resolution: "@tauri-apps/api@npm:2.10.1"
+  checksum: 10c0/f3c0b2ba67a0b887440a7faa1e0589e847760ee30ec29b964f22573a46b817cb3af2199d6f5f7dfdda54d65b465ebaaa280454c610a5c53d808a0911fa15e45d
   languageName: node
   linkType: hard
 
@@ -2792,6 +2818,24 @@ __metadata:
   bin:
     tauri: tauri.js
   checksum: 10c0/d97531be1cd0dfd16ec6a405f954160f5d9ac81aff67efb1897b997f3d668034f9fc1d417401bb8affede983a276af6f3cd8af08de4449d5b8085f787ddb3d17
+  languageName: node
+  linkType: hard
+
+"@tauri-apps/plugin-dialog@npm:^2.6.0":
+  version: 2.6.0
+  resolution: "@tauri-apps/plugin-dialog@npm:2.6.0"
+  dependencies:
+    "@tauri-apps/api": "npm:^2.8.0"
+  checksum: 10c0/b5d4f91588d28e1790caffaba3fed0f656b3d569ea78a5cf4d6e873686fb7b423b84cfdc75777863da8d916cc0784f3c2e1806de16765d4a1f4e4e6623d2408a
+  languageName: node
+  linkType: hard
+
+"@tauri-apps/plugin-fs@npm:^2.4.5":
+  version: 2.4.5
+  resolution: "@tauri-apps/plugin-fs@npm:2.4.5"
+  dependencies:
+    "@tauri-apps/api": "npm:^2.8.0"
+  checksum: 10c0/238d1864bfa505f6e1eb3dfcba0867678fb386b590f33d4754d7f7edd9bf17a9bc2b28a9e1a2b5a4490a379d79f176448919ce317803d502d2589b7aa0a75c47
   languageName: node
   linkType: hard
 
@@ -4187,8 +4231,11 @@ __metadata:
   dependencies:
     "@reduxjs/toolkit": "npm:^2.11.2"
     "@tailwindcss/postcss": "npm:^4"
+    "@tanstack/react-table": "npm:^8.21.3"
     "@tauri-apps/api": "npm:^2.0.1"
     "@tauri-apps/cli": "npm:^2.0.0-rc.18"
+    "@tauri-apps/plugin-dialog": "npm:^2.6.0"
+    "@tauri-apps/plugin-fs": "npm:^2.4.5"
     "@types/file-saver": "npm:^2.0.7"
     "@types/node": "npm:^20"
     "@types/react": "npm:^19"
